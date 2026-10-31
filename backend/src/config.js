@@ -14,4 +14,8 @@ export const config = {
   // Background job intervals
   simulatorTickMs: num(process.env.SIMULATOR_TICK_MS, 3000),
   analyticsTickMs: num(process.env.ANALYTICS_TICK_MS, 30000),
+  gpsPingEveryTicks: num(process.env.GPS_PING_EVERY_TICKS, 5),
+  // Crowd reports considered when computing current density
+  densityWindowMinutes: num(process.env.DENSITY_WINDOW_MINUTES, 15),
+  jobsEnabled: process.env.JOBS_ENABLED !== 'false',
 };
