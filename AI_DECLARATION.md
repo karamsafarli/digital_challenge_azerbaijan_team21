@@ -17,6 +17,7 @@
 | 11:xx | Addım 0 — layihə skeleti | "Start Step 0" (layihə strukturu, Express health endpoint, Vite+React+Tailwind, docker-compose, Postgres) | Backend/frontend skeletləri, Dockerfile-lar, nginx proxy (API + WebSocket), docker-compose yaradıldı. |
 | 11:2x | Mühit qurulumu | "Yes, install Node + Git" | AI Node LTS və Git-i winget ilə quraşdırdı, npm 11-in bloklədığı Prisma/esbuild install script-lərini təsdiqlədi. Health testləri (2/2) keçdi, frontend build və dev server yoxlanıldı. |
 | 11:3x | Addım 1 — DB sxemi və seed | "Postgres-i docker-də qaldır" → AI Addım 1-i icra etdi | Prisma sxemi (Route, Stop, RouteStop, Bus, GpsPing, CrowdReport, DensitySnapshot, Alert), real Bakı məkanları əsasında 5 marşrut / 21 dayanacaq / 18 avtobus seed, haversine geo util + 3 unit test. Biz yoxladıq: miqrasiya tətbiq olundu, SQL ilə məlumat yoxlanıldı (marşrut uzunluqları 5.7–10.6 km). |
+| 11:4x | Addım 2 — analitika mühərriki | "Start Step 2" (ETA, sıxlıq və anomaliya servisləri + testlər) | Təmiz funksiyalar: `density.js` (yeni bildirişlər daha çox çəki alır, yarımömür 5 dəq + avtobus doluluğu), `eta.js` (gediş-qayıdış marşrut, sıxlığa görə sürət əmsalı, dayanacaq gözləmə vaxtı), `anomaly.js` (10 dəq fasiləsiz HIGH + min. 3 HIGH bildiriş, məlumat boşluğu yoxlaması, təkrar alert yoxdur). 35 unit test. Testlərdən biri test datasında səhv tapdı (1 dəq pəncərədə bildirişlər pəncərədən kənarda idi) — test düzəldildi, qayda dəyişmədi. |
 
 <!-- Hər yeni addımdan sonra bura bir sətir əlavə edin. -->
 
