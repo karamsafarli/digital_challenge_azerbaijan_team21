@@ -1,0 +1,33 @@
+Movzu: Agilli mobillik ve neqliyyat - baki ictimai neqliyyati ucun real-vaxt marsrut ve yuk analitikasi sistemi
+
+1. Problem konteksti (Problem statement)
+Baki seherinde pik saatlarda avtobus marsrutlarinda heddinden artiq sixliq yasanir, gozleme muddetleri qeydi-mueyyenlesir ve bezi xetlerde avtobuslar bos getdiyi halda, diger xetlerde sernisinler dayanacaqlarda qalir.
+Movcud sistemlerde sernisinler real vaxt sixliq derecesini gore bilmir, operatorlar ise dispetcer idareetmesini dinamik tenzimlemekde cetinlik cekirler.
+
+2. Tapsiriq (task requirement)
+3 neferlik komandaniz 4 saat ezinde "Smart Transit & Crowdsourcing Engine" mikro-sisteminin funksional prototipini isleyib hzirlmalidir. Sistem hem sernisinler, hem de operatorlar/dovlet qurumu ucun iki esas moduldan ibaret olmalidir.
+
+Esas modullar:
+1. Sernisin modulu (API / Web app)
+- Masrsrut ve ya dayanacaq secildikde real-vaxt avtobos yerlesmesini ve gozlenilen gelis vaxtini (ETA) gostermek
+- Sernisinlere avtobusun sixliq seviyyesini (Asagi / orta/ yuksek) report etmek imkani vermek
+
+2. Operator modulul & Analitika Engine:
+- Daxil olan Crowdsourcing data (sernisin bildirisleri) ve GPS koordinatlari esasinda xetler uzre sixliq xeritesini (ve ya siyahisini) yenilemek
+- Anomaliya xeberdarligi: Eger bir xett uzre 10 deqiqe erzinde sixliq seviyyesi Yuksek kimi qeyde alinarsa, operator panelinde avtomatik olaraq "Elave avtobus ehtiyati ayrilmalidir" tovsiyesi/bildirisi yaratmaq.
+
+3. Tehvil verilmeli materiallarin siyahisi (Checklist)
+    1. Islek proqram ve menbe kodu (source code)
+    Github repo linki ve ya kod arxiv fayli
+    2. ise salinma telimati ve arxitektura qeydi (readme.md)
+    - layihenin lokal muhitde (docker ve ya local runtime) nece basladilmasi addimlari.
+    - qisa sistem arxitekturasini tesviri (frontend -backend - db/api flow)
+
+
+3. AI istifadesi haqqinda beyenname (ai declaration)
+- kodun yzilmasinda testlerde ve ya arxitektura seciminde hansi AI aletlerinden nece ve hansi promptlarla istifade edildiyine dair beyanat
+
+4. texniki izah senedi:
+- layihenin strukturu mesgul olunan problme, secilmis texnologiyalar ve gelecek inkisaf imkanlarini ehate eden senedi
+
+

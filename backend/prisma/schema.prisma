@@ -1,0 +1,135 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CrowdLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+model Route {
+  id        Int               @id @default(autoincrement())
+  number    String            @unique
+  name      String
+  color     String
+  lengthM   Float
+  // Ordered polyline [[lat, lng], ...] the buses drive along
+  path      Json
+  createdAt DateTime          @default(now())
+  stops     RouteStop[]
+  buses     Bus[]
+  reports   CrowdReport[]
+  snapshots DensitySnapshot[]
+  alerts    Alert[]
+}
+
+model Stop {
+  id      Int           @id @default(autoincrement())
+  name    String        @unique
+  lat     Float
+  lng     Float
+  routes  RouteStop[]
+  reports CrowdReport[]
+}
+
+model RouteStop {
+  id        Int   @id @default(autoincrement())
+  routeId   Int
+  stopId    Int
+  order     Int
+  // Distance from the start of the route polyline, in metres
+  distanceM Float
+  route     Route @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  stop      Stop  @relation(fields: [stopId], references: [id], onDelete: Cascade)
+
+  @@unique([routeId, order])
+  @@unique([routeId, stopId])
+}
+
+model Bus {
+  id        Int           @id @default(autoincrement())
+  plate     String        @unique
+  routeId   Int
+  capacity  Int           @default(90)
+  lat       Float
+  lng       Float
+  // Position along the route polyline in metres, and travel direction (1 forward, -1 back)
+  progressM Float         @default(0)
+  direction Int           @default(1)
+  speedKmh  Float         @default(0)
+  // Simulated on-board passenger count (sensor / validator data)
+  occupancy Int           @default(0)
+  updatedAt DateTime      @updatedAt
+  route     Route         @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  pings     GpsPing[]
+  reports   CrowdReport[]
+}
+
+model GpsPing {
+  id        Int      @id @default(autoincrement())
+  busId     Int
+  lat       Float
+  lng       Float
+  speedKmh  Float
+  occupancy Int
+  createdAt DateTime @default(now())
+  bus       Bus      @relation(fields: [busId], references: [id], onDelete: Cascade)
+
+  @@index([busId, createdAt])
+}
+
+model CrowdReport {
+  id        Int        @id @default(autoincrement())
+  routeId   Int
+  busId     Int?
+  stopId    Int?
+  level     CrowdLevel
+  clientId  String?
+  createdAt DateTime   @default(now())
+  route     Route      @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  bus       Bus?       @relation(fields: [busId], references: [id], onDelete: SetNull)
+  stop      Stop?      @relation(fields: [stopId], references: [id], onDelete: SetNull)
+
+  @@index([routeId, createdAt])
+}
+
+model DensitySnapshot {
+  id           Int        @id @default(autoincrement())
+  routeId      Int
+  score        Float
+  level        CrowdLevel
+  reportCount  Int
+  avgOccupancy Float
+  createdAt    DateTime   @default(now())
+  route        Route      @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@index([routeId, createdAt])
+}
+
+model Alert {
+  id             Int         @id @default(autoincrement())
+  routeId        Int
+  type           String      @default("EXTRA_BUS_NEEDED")
+  message        String
+  status         AlertStatus @default(OPEN)
+  details        Json?
+  createdAt      DateTime    @default(now())
+  acknowledgedAt DateTime?
+  resolvedAt     DateTime?
+  route          Route       @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@index([routeId, status])
+}
