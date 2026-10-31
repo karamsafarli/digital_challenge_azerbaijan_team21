@@ -1,4 +1,5 @@
 import { LEVEL_META } from '../utils/format.js';
+import { useHorizontalWheel } from '../hooks/useHorizontalWheel.js';
 
 export function RouteNumber({ route, size = 'md', className = '' }) {
   const sizes = { sm: 'h-6 min-w-[2.25rem] text-xs', md: 'h-8 min-w-[2.75rem] text-sm', lg: 'h-11 min-w-[3.5rem] text-lg' };
@@ -14,13 +15,14 @@ export function RouteNumber({ route, size = 'md', className = '' }) {
 
 /** Horizontal route pills with a live density dot. */
 export default function RouteSelector({ routes, selectedRouteId, onSelect, densityByRoute }) {
+  const stripRef = useHorizontalWheel();
   const pill = (active) =>
     `flex shrink-0 items-center gap-2 rounded-xl px-2 py-1.5 text-sm font-medium ring-1 transition ${
       active ? 'bg-brand-600 text-white ring-brand-600 shadow-sm' : 'bg-white text-slate-700 ring-slate-200 hover:ring-slate-300'
     }`;
 
   return (
-    <div className="scrollbar-none -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+    <div ref={stripRef} className="scrollbar-none -mx-1 flex select-none gap-2 overflow-x-auto px-1 pb-1">
       <button type="button" className={pill(selectedRouteId === null)} onClick={() => onSelect(null)}>
         <span className="px-1.5">Hamısı</span>
       </button>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Megaphone, User } from 'lucide-react';
 import { api, errorMessage } from '../api/client.js';
 import { useToast } from '../context/ToastContext.jsx';
+import { useHorizontalWheel } from '../hooks/useHorizontalWheel.js';
 import { LEVEL_META, LEVELS } from '../utils/format.js';
 
 const TILES = {
@@ -26,6 +27,7 @@ export default function ReportPanel({ route, buses, stopId }) {
   const [busId, setBusId] = useState(null);
   const [sending, setSending] = useState(null);
   const [lastSent, setLastSent] = useState(null);
+  const chipsRef = useHorizontalWheel();
 
   if (!route) {
     return (
@@ -69,7 +71,7 @@ export default function ReportPanel({ route, buses, stopId }) {
       <p className="mt-1 text-xs text-slate-500">Bildirişiniz digər sərnişinlərə və dispetçerlərə kömək edir.</p>
 
       {buses.length > 0 && (
-        <div className="scrollbar-none -mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1 py-0.5">
+        <div ref={chipsRef} className="scrollbar-none -mx-1 mt-3 flex select-none gap-1.5 overflow-x-auto px-1 py-0.5">
           <button type="button" className={chip(busId === null)} onClick={() => setBusId(null)}>
             Bütün xətt
           </button>
