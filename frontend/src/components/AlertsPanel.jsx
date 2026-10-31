@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { BellRing, CheckCheck, CheckCircle2, Clock3, Eye } from 'lucide-react';
+import { BellRing, Bus, CheckCheck, CheckCircle2, Clock3, Eye } from 'lucide-react';
+import DispatchDialog from './DispatchDialog.jsx';
 import { api, errorMessage } from '../api/client.js';
 import { formatTime } from '../utils/format.js';
 
@@ -20,6 +21,7 @@ function Metric({ label, value }) {
 function AlertItem({ alert, highlighted }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [dispatching, setDispatching] = useState(false);
 
   const update = async (status) => {
     setBusy(true);
@@ -73,6 +75,9 @@ function AlertItem({ alert, highlighted }) {
       {error && <p className="mt-2 text-xs text-red-700">{error}</p>}
 
       <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" disabled={busy} onClick={() => setDispatching(true)} className="btn-primary px-3 py-1.5 text-xs">
+          <Bus className="h-3.5 w-3.5" /> Avtobus göndər
+        </button>
         {open && (
           <button type="button" disabled={busy} onClick={() => update('ACKNOWLEDGED')} className="btn-secondary px-3 py-1.5 text-xs">
             <Eye className="h-3.5 w-3.5" /> Qəbul et
@@ -82,11 +87,16 @@ function AlertItem({ alert, highlighted }) {
           type="button"
           disabled={busy}
           onClick={() => update('RESOLVED')}
-          className="btn bg-green-600 px-3 py-1.5 text-xs text-white hover:bg-green-700"
+          className="btn-ghost px-3 py-1.5 text-xs"
+          title="Əlavə tədbir görülmədən bağla"
         >
-          <CheckCheck className="h-3.5 w-3.5" /> Əlavə avtobus ayrıldı
+          <CheckCheck className="h-3.5 w-3.5" /> Bağla
         </button>
       </div>
+      {alert.details?.resolution && (
+        <p className="mt-2 text-xs text-green-700">Həll: {alert.details.resolution.busPlate}</p>
+      )}
+      {dispatching && <DispatchDialog routeId={alert.routeId} onClose={() => setDispatching(false)} />}
     </li>
   );
 }

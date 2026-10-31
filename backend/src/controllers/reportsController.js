@@ -2,13 +2,17 @@ import { prisma } from '../db.js';
 import { config } from '../config.js';
 import { analyzeRoute } from '../jobs/analyticsJob.js';
 import { getAllLatestDensity } from '../services/densityStore.js';
-import { broadcast, EVENTS } from '../socket.js';
+import { broadcast, broadcastToOperators, EVENTS } from '../socket.js';
+import { reportInclude } from './consoleController.js';
 import { HttpError, notFound } from '../utils/httpError.js';
 
 /** Passenger crowd report: validate references, throttle per account, recompute density at once. */
 export async function createReport(req, res) {
   const { routeId, busId, stopId, level, clientId } = req.body;
   const userId = req.user.id;
+
+  const reporter = await prisma.user.findUnique({ where: { id: userId }, select: { blocked: true } });
+  if (reporter?.blocked) throw new HttpError(403, 'Hesabınız bildiriş göndərmək üçün bloklanıb');
 
   const route = await prisma.route.findUnique({
     where: { id: routeId },
@@ -41,7 +45,11 @@ export async function createReport(req, res) {
     }
   }
 
-  const report = await prisma.crowdReport.create({ data: { routeId, busId, stopId, level, clientId, userId } });
+  const report = await prisma.crowdReport.create({
+    data: { routeId, busId, stopId, level, clientId, userId },
+    include: reportInclude,
+  });
+  broadcastToOperators(EVENTS.REPORT_NEW, report);
 
   const { density } = await analyzeRoute(route);
   broadcast(EVENTS.DENSITY_UPDATE, getAllLatestDensity());

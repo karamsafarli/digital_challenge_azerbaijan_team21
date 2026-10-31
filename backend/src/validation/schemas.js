@@ -36,6 +36,33 @@ export const alertsQuery = z.object({
 
 export const updateAlertBody = z.object({ status: z.enum(['ACKNOWLEDGED', 'RESOLVED']) });
 
+export const dispatchBody = z.object({
+  toRouteId: id,
+  fromRouteId: id.optional(),
+  busId: id.optional(),
+});
+
+export const announcementBody = z.object({
+  routeId: id.nullable().optional(),
+  message: z.string().trim().min(5, 'Elan ən azı 5 simvol olmalıdır').max(280),
+  severity: z.enum(['INFO', 'WARNING', 'CRITICAL']).default('INFO'),
+  durationMinutes: z.coerce.number().int().min(5).max(1440).optional(),
+});
+
+export const reportsQuery = z.object({ limit: z.coerce.number().int().min(1).max(200).default(50) });
+export const moderateReportBody = z.object({ flagged: z.boolean() });
+export const blockUserBody = z.object({ blocked: z.boolean() });
+
+export const settingsBody = z
+  .object({
+    alertWindowMinutes: z.coerce.number().int().min(1).max(60),
+    alertMinReports: z.coerce.number().int().min(1).max(50),
+    densityWindowMinutes: z.coerce.number().int().min(5).max(120),
+    reportCooldownSeconds: z.coerce.number().int().min(0).max(3600),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, 'Ən azı bir ayar göndərin');
+
 export const simulateRushBody = z.object({
   routeId: id,
   durationMinutes: z.coerce.number().min(1).max(60).optional(),

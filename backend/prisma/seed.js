@@ -45,8 +45,34 @@ async function main() {
   // Idempotent: skip when data already exists so container restarts keep history.
   if ((await prisma.route.count()) > 0 && !process.argv.includes('--force')) {
     console.log('Seed: data already present, skipping (use --force to reset).');
+    await seedReserveBuses();
     return;
   }
+  await seedNetwork();
+  await seedReserveBuses();
+}
+
+/** Reserve buses waiting in the depot for the dispatcher (created once). */
+async function seedReserveBuses() {
+  if ((await prisma.bus.count({ where: { status: 'RESERVE' } })) > 0) return;
+  if ((await prisma.dispatchAction.count()) > 0) return; // reserves already used/returned before
+  for (let i = 1; i <= 4; i += 1) {
+    await prisma.bus.create({
+      data: {
+        plate: `10-EH-${String(i).padStart(3, '0')}`,
+        status: 'RESERVE',
+        routeId: null,
+        capacity: 90,
+        lat: 40.4093,
+        lng: 49.8671,
+        occupancy: 0,
+      },
+    });
+  }
+  console.log('Seed: 4 reserve buses parked in the depot.');
+}
+
+async function seedNetwork() {
 
   await prisma.$transaction([
     prisma.alert.deleteMany(),

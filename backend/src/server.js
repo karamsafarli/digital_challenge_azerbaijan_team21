@@ -5,12 +5,19 @@ import { prisma } from './db.js';
 import { initSocket } from './socket.js';
 import { startSimulator } from './jobs/simulatorJob.js';
 import { startAnalytics } from './jobs/analyticsJob.js';
+import { loadSettings } from './services/settings.js';
 
 const app = createApp();
 const server = http.createServer(app);
 initSocket(server);
 
 const timers = [];
+
+try {
+  await loadSettings();
+} catch (err) {
+  console.error('Could not load saved settings, using defaults:', err.message);
+}
 
 server.listen(config.port, () => {
   console.log(`Smart Transit API listening on http://localhost:${config.port}`);

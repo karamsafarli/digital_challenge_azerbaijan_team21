@@ -71,7 +71,7 @@ export default function ReportPanel({ route, buses, stopId }) {
       <p className="mt-1 text-xs text-slate-500">Bildirişiniz digər sərnişinlərə və dispetçerlərə kömək edir.</p>
 
       {buses.length > 0 && (
-        <div ref={chipsRef} className="scrollbar-none -mx-1 mt-3 flex select-none gap-1.5 overflow-x-auto px-1 py-0.5">
+        <div ref={chipsRef} className="scrollbar-none -mx-1 mt-3 flex select-none gap-1.5 overflow-x-auto px-1 py-1">
           <button type="button" className={chip(busId === null)} onClick={() => setBusId(null)}>
             Bütün xətt
           </button>

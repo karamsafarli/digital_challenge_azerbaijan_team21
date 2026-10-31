@@ -92,7 +92,7 @@ export async function getStats(req, res) {
   const [reportGroups, snapshots, routes] = await Promise.all([
     prisma.crowdReport.groupBy({
       by: ['routeId', 'level'],
-      where: { createdAt: { gte: since } },
+      where: { createdAt: { gte: since }, flagged: false },
       _count: { _all: true },
     }),
     prisma.densitySnapshot.findMany({

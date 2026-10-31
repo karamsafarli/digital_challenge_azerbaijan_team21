@@ -14,9 +14,16 @@ export function createMockPrisma() {
     create: vi.fn(),
     createMany: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
+    upsert: vi.fn(),
+    count: vi.fn().mockResolvedValue(0),
     groupBy: vi.fn().mockResolvedValue([]),
   });
   return {
+    $transaction: vi.fn((ops) => Promise.all(ops)),
+    dispatchAction: model(),
+    announcement: model(),
+    setting: model(),
     user: model(),
     route: model(),
     stop: model(),

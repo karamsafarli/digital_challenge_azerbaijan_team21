@@ -1,69 +1,22 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, BellRing, Bus, Info, Map as MapIcon, MessageSquareText, X } from 'lucide-react';
-import TransitMap from '../components/TransitMap.jsx';
-import AlertsPanel from '../components/AlertsPanel.jsx';
-import DensityTable from '../components/DensityTable.jsx';
-import OperatorLayout from '../layouts/OperatorLayout.jsx';
-import { useTransitData } from '../hooks/useTransitData.js';
-import { useOperatorData } from '../hooks/useOperatorData.js';
-import { LEVEL_META } from '../utils/format.js';
+import { useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
+import { AlertTriangle, BellRing, Bus, Info, Map as MapIcon, MessageSquareText } from 'lucide-react';
+import TransitMap from '../../components/TransitMap.jsx';
+import AlertsPanel from '../../components/AlertsPanel.jsx';
+import DensityTable from '../../components/DensityTable.jsx';
+import StatCard from '../../components/StatCard.jsx';
+import { useOperator } from '../../context/OperatorContext.jsx';
+import { LEVEL_META } from '../../utils/format.js';
 
-const TONES = {
-  red: 'bg-red-50 text-red-600',
-  amber: 'bg-amber-50 text-amber-600',
-  green: 'bg-green-50 text-green-600',
-  brand: 'bg-brand-50 text-brand-600',
-};
+export default function Overview() {
+  const { routes, buses, density, alerts, stats, config, error, refresh, banner } = useOperator();
+  const location = useLocation();
 
-function StatCard({ icon: Icon, label, value, hint, tone = 'brand' }) {
-  return (
-    <div className="card flex items-center gap-4 p-4">
-      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${TONES[tone]}`}>
-        <Icon className="h-6 w-6" />
-      </span>
-      <div className="min-w-0">
-        <div className="text-2xl font-bold tabular-nums tracking-tight text-slate-900">{value}</div>
-        <div className="truncate text-sm text-slate-500">{label}</div>
-        {hint && <div className="truncate text-xs text-slate-400">{hint}</div>}
-      </div>
-    </div>
-  );
-}
-
-function NewAlertBanner({ alert, onClose }) {
-  return (
-    <div role="alert" className="fixed inset-x-4 top-4 z-[2000] mx-auto max-w-xl animate-slide-down">
-      <div className="flex items-start gap-3 rounded-2xl bg-red-600 p-4 text-white shadow-float ring-1 ring-red-700">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15">
-          <AlertTriangle className="h-5 w-5" />
-        </span>
-        <div className="flex-1">
-          <p className="font-semibold">Yeni anomaliya · Xətt №{alert.route?.number}</p>
-          <p className="mt-0.5 text-sm text-red-50">{alert.message}</p>
-          <a href="#alerts" onClick={onClose} className="mt-2 inline-block text-sm font-semibold underline underline-offset-2">
-            Xəbərdarlığa keç
-          </a>
-        </div>
-        <button type="button" onClick={onClose} className="text-white/80 hover:text-white" aria-label="Bağla">
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export default function Operator() {
-  const { routes, buses } = useTransitData();
-  const [banner, setBanner] = useState(null);
-  const { density, alerts, stats, config, error, refresh } = useOperatorData({ onNewAlert: setBanner });
-
+  // Support links like /operator#alerts from the new-alert banner
   useEffect(() => {
-    if (!banner) return undefined;
-    const timer = setTimeout(() => setBanner(null), 12000);
-    return () => clearTimeout(timer);
-  }, [banner]);
+    if (location.hash) document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth' });
+  }, [location.hash]);
 
-  // Colour every route line on the map by its live density level
   const routeColors = useMemo(
     () => Object.fromEntries(density.map((d) => [d.routeId, LEVEL_META[d.level].color])),
     [density],
@@ -79,12 +32,9 @@ export default function Operator() {
     : 0;
 
   return (
-    <OperatorLayout badges={{ alerts: alerts.length }}>
-      {banner && <NewAlertBanner alert={banner} onClose={() => setBanner(null)} />}
-
+    <>
       <section id="overview" className="scroll-mt-24">
         {error && <p className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             icon={BellRing}
@@ -110,7 +60,7 @@ export default function Operator() {
             <p>
               <span className="font-semibold">Anomaliya qaydası:</span> xətt üzrə sıxlıq <b>{config.alertWindowMinutes} dəqiqə</b>{' '}
               fasiləsiz <b>Yüksək</b> qalarsa və bu müddətdə ən azı <b>{config.alertMinReports}</b> Yüksək bildiriş daxil olarsa,
-              «Əlavə avtobus ehtiyatı ayrılmalıdır» xəbərdarlığı yaranır. Analitika hər 30 saniyədə yenilənir.
+              «Əlavə avtobus ehtiyatı ayrılmalıdır» xəbərdarlığı yaranır.
             </p>
           </div>
         )}
@@ -144,6 +94,6 @@ export default function Operator() {
           <AlertsPanel alerts={alerts} highlightId={banner?.id} />
         </div>
       </div>
-    </OperatorLayout>
+    </>
   );
 }

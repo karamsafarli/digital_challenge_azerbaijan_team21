@@ -52,5 +52,7 @@ export function useOperatorData({ onNewAlert } = {}) {
     );
   });
 
-  return { density, alerts, stats, config, error, refresh };
+  useSocketEvent('fleet:update', () => refresh());
+
+  return { density, alerts, stats, config, setConfig, error, refresh };
 }

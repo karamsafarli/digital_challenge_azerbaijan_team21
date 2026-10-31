@@ -56,4 +56,17 @@ export const api = {
   config: () => data(http.get('/operator/config')),
   simulateRush: (routeId) => data(http.post('/operator/simulate-rush', { routeId })),
   cancelRush: (routeId) => data(http.delete(`/operator/simulate-rush/${routeId}`)),
+  saveConfig: (body) => data(http.patch('/operator/config', body)),
+
+  fleet: () => data(http.get('/operator/fleet')),
+  dispatch: (body) => data(http.post('/operator/dispatch', body)),
+  returnToDepot: (busId) => data(http.post(`/operator/fleet/${busId}/return`)),
+
+  announcements: () => data(http.get('/announcements')),
+  createAnnouncement: (body) => data(http.post('/operator/announcements', body)),
+  removeAnnouncement: (id) => data(http.delete(`/operator/announcements/${id}`)),
+
+  reports: (limit = 50) => data(http.get('/operator/reports', { params: { limit } })),
+  moderateReport: (id, flagged) => data(http.patch(`/operator/reports/${id}`, { flagged })),
+  setUserBlocked: (id, blocked) => data(http.patch(`/operator/users/${id}`, { blocked })),
 };

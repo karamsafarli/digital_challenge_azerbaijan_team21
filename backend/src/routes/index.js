@@ -5,7 +5,13 @@ import { asyncHandler, validate } from '../middleware/validate.js';
 import { requireAuth } from '../middleware/auth.js';
 import {
   alertsQuery,
+  announcementBody,
+  blockUserBody,
   createReportBody,
+  dispatchBody,
+  moderateReportBody,
+  reportsQuery,
+  settingsBody,
   etaQuery,
   idParams,
   loginBody,
@@ -26,6 +32,16 @@ import {
   simulateRush,
   updateAlert,
 } from '../controllers/operatorController.js';
+import { dispatchBus, getFleet, returnToDepot } from '../controllers/fleetController.js';
+import {
+  createAnnouncement,
+  listAnnouncements,
+  listReports,
+  moderateReport,
+  removeAnnouncement,
+  saveSettings,
+  setUserBlocked,
+} from '../controllers/consoleController.js';
 
 export function createApiRouter() {
   const router = Router();
@@ -57,6 +73,7 @@ export function createApiRouter() {
   router.get('/routes/:id/buses', validate({ params: idParams }), asyncHandler(listRouteBuses));
   router.get('/stops', asyncHandler(listStops));
   router.get('/stops/:id/eta', validate({ params: idParams, query: etaQuery }), asyncHandler(getStopEta));
+  router.get('/announcements', asyncHandler(listAnnouncements));
   router.post(
     '/reports',
     reportLimiter,
@@ -75,6 +92,21 @@ export function createApiRouter() {
   operator.patch('/alerts/:id', validate({ params: idParams, body: updateAlertBody }), asyncHandler(updateAlert));
   operator.post('/simulate-rush', validate({ body: simulateRushBody }), asyncHandler(simulateRush));
   operator.delete('/simulate-rush/:id', validate({ params: idParams }), asyncHandler(cancelRush));
+  operator.patch('/config', validate({ body: settingsBody }), asyncHandler(saveSettings));
+
+  // Fleet & dispatch
+  operator.get('/fleet', asyncHandler(getFleet));
+  operator.post('/dispatch', validate({ body: dispatchBody }), asyncHandler(dispatchBus));
+  operator.post('/fleet/:id/return', validate({ params: idParams }), asyncHandler(returnToDepot));
+
+  // Announcements
+  operator.post('/announcements', validate({ body: announcementBody }), asyncHandler(createAnnouncement));
+  operator.delete('/announcements/:id', validate({ params: idParams }), asyncHandler(removeAnnouncement));
+
+  // Report moderation
+  operator.get('/reports', validate({ query: reportsQuery }), asyncHandler(listReports));
+  operator.patch('/reports/:id', validate({ params: idParams, body: moderateReportBody }), asyncHandler(moderateReport));
+  operator.patch('/users/:id', validate({ params: idParams, body: blockUserBody }), asyncHandler(setUserBlocked));
   router.use('/operator', operator);
 
   return router;

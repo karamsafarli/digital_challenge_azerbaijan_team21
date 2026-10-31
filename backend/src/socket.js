@@ -8,6 +8,10 @@ export const EVENTS = {
   DENSITY_UPDATE: 'density:update',
   ALERT_NEW: 'alert:new',
   ALERT_UPDATED: 'alert:updated',
+  ANNOUNCEMENTS_UPDATE: 'announcements:update',
+  // operator-only
+  FLEET_UPDATE: 'fleet:update',
+  REPORT_NEW: 'report:new',
 };
 
 const OPERATORS_ROOM = 'operators';

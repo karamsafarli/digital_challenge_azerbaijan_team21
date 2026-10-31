@@ -20,35 +20,53 @@ enum AlertStatus {
   RESOLVED
 }
 
+enum BusStatus {
+  IN_SERVICE
+  RESERVE
+}
+
+enum Severity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
 enum Role {
   PASSENGER
   OPERATOR
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  name         String
-  email        String        @unique
-  passwordHash String
-  role         Role          @default(PASSENGER)
-  createdAt    DateTime      @default(now())
-  reports      CrowdReport[]
+  id            Int              @id @default(autoincrement())
+  name          String
+  email         String           @unique
+  passwordHash  String
+  role          Role             @default(PASSENGER)
+  // Blocked passengers can still sign in but cannot send crowd reports
+  blocked       Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  reports       CrowdReport[]
+  dispatches    DispatchAction[]
+  announcements Announcement[]
 }
 
 model Route {
-  id        Int               @id @default(autoincrement())
-  number    String            @unique
-  name      String
-  color     String
-  lengthM   Float
+  id            Int               @id @default(autoincrement())
+  number        String            @unique
+  name          String
+  color         String
+  lengthM       Float
   // Ordered polyline [[lat, lng], ...] the buses drive along
-  path      Json
-  createdAt DateTime          @default(now())
-  stops     RouteStop[]
-  buses     Bus[]
-  reports   CrowdReport[]
-  snapshots DensitySnapshot[]
-  alerts    Alert[]
+  path          Json
+  createdAt     DateTime          @default(now())
+  stops         RouteStop[]
+  buses         Bus[]
+  reports       CrowdReport[]
+  snapshots     DensitySnapshot[]
+  alerts        Alert[]
+  dispatchesIn  DispatchAction[]  @relation("dispatchTo")
+  dispatchesOut DispatchAction[]  @relation("dispatchFrom")
+  announcements Announcement[]
 }
 
 model Stop {
@@ -75,22 +93,25 @@ model RouteStop {
 }
 
 model Bus {
-  id        Int           @id @default(autoincrement())
-  plate     String        @unique
-  routeId   Int
-  capacity  Int           @default(90)
-  lat       Float
-  lng       Float
+  id         Int              @id @default(autoincrement())
+  plate      String           @unique
+  // null while the bus waits in the depot as a reserve
+  routeId    Int?
+  status     BusStatus        @default(IN_SERVICE)
+  capacity   Int              @default(90)
+  lat        Float
+  lng        Float
   // Position along the route polyline in metres, and travel direction (1 forward, -1 back)
-  progressM Float         @default(0)
-  direction Int           @default(1)
-  speedKmh  Float         @default(0)
+  progressM  Float            @default(0)
+  direction  Int              @default(1)
+  speedKmh   Float            @default(0)
   // Simulated on-board passenger count (sensor / validator data)
-  occupancy Int           @default(0)
-  updatedAt DateTime      @updatedAt
-  route     Route         @relation(fields: [routeId], references: [id], onDelete: Cascade)
-  pings     GpsPing[]
-  reports   CrowdReport[]
+  occupancy  Int              @default(0)
+  updatedAt  DateTime         @updatedAt
+  route      Route?           @relation(fields: [routeId], references: [id], onDelete: SetNull)
+  pings      GpsPing[]
+  reports    CrowdReport[]
+  dispatches DispatchAction[]
 }
 
 model GpsPing {
@@ -114,6 +135,8 @@ model CrowdReport {
   level     CrowdLevel
   clientId  String?
   userId    Int?
+  // Moderated reports are kept for audit but ignored by the analytics engine
+  flagged   Boolean    @default(false)
   createdAt DateTime   @default(now())
   route     Route      @relation(fields: [routeId], references: [id], onDelete: Cascade)
   bus       Bus?       @relation(fields: [busId], references: [id], onDelete: SetNull)
@@ -150,4 +173,43 @@ model Alert {
   route          Route       @relation(fields: [routeId], references: [id], onDelete: Cascade)
 
   @@index([routeId, status])
+}
+
+// Operator actions on the fleet: reserve dispatch, rebalancing between routes, return to depot
+model DispatchAction {
+  id          Int      @id @default(autoincrement())
+  type        String
+  busId       Int
+  fromRouteId Int?
+  toRouteId   Int?
+  operatorId  Int?
+  note        String?
+  createdAt   DateTime @default(now())
+  bus         Bus      @relation(fields: [busId], references: [id], onDelete: Cascade)
+  fromRoute   Route?   @relation("dispatchFrom", fields: [fromRouteId], references: [id], onDelete: SetNull)
+  toRoute     Route?   @relation("dispatchTo", fields: [toRouteId], references: [id], onDelete: SetNull)
+  operator    User?    @relation(fields: [operatorId], references: [id], onDelete: SetNull)
+
+  @@index([toRouteId, createdAt])
+}
+
+// Service notices shown live to passengers (routeId null = all routes)
+model Announcement {
+  id          Int       @id @default(autoincrement())
+  routeId     Int?
+  message     String
+  severity    Severity  @default(INFO)
+  active      Boolean   @default(true)
+  expiresAt   DateTime?
+  createdById Int?
+  createdAt   DateTime  @default(now())
+  route       Route?    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+}
+
+// Runtime-editable engine settings (alert rule thresholds etc.)
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
 }

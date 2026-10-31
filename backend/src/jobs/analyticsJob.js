@@ -22,12 +22,24 @@ const minutesBefore = (date, minutes) => new Date(date.getTime() - minutes * 600
 export function analyzeRoute(route, now = new Date()) {
   return withRouteLock(route.id, async () => {
     const lookbackMinutes = Math.max(config.densityWindowMinutes, config.alertWindowMinutes);
+    // Reports made before the last extra bus was dispatched describe a situation that no longer exists
+    const lastDispatch = await prisma.dispatchAction.findFirst({
+      where: { toRouteId: route.id, createdAt: { lte: now } },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    const lookbackStart = minutesBefore(now, lookbackMinutes);
+    const since = lastDispatch && lastDispatch.createdAt > lookbackStart ? lastDispatch.createdAt : lookbackStart;
+
     const [reports, buses] = await Promise.all([
       prisma.crowdReport.findMany({
-        where: { routeId: route.id, createdAt: { gte: minutesBefore(now, lookbackMinutes), lte: now } },
+        where: { routeId: route.id, flagged: false, createdAt: { gte: since, lte: now } },
         select: { level: true, createdAt: true },
       }),
-      prisma.bus.findMany({ where: { routeId: route.id }, select: { occupancy: true, capacity: true } }),
+      prisma.bus.findMany({
+        where: { routeId: route.id, status: 'IN_SERVICE' },
+        select: { occupancy: true, capacity: true },
+      }),
     ]);
 
     const density = computeRouteDensity({ reports, buses, now, windowMinutes: config.densityWindowMinutes });

@@ -8,6 +8,8 @@ import LevelBadge from '../components/LevelBadge.jsx';
 import PassengerLayout from '../layouts/PassengerLayout.jsx';
 import { useTransitData } from '../hooks/useTransitData.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import AnnouncementCard from '../components/AnnouncementCard.jsx';
+import { useAnnouncements } from '../hooks/useAnnouncements.js';
 
 function SelectedRouteCard({ route, busCount, level }) {
   return (
@@ -34,6 +36,7 @@ export default function Passenger() {
   const { routes, buses, densityByRoute, loading, error } = useTransitData();
   const [selectedRouteId, setSelectedRouteId] = useState(null);
   const [selectedStopId, setSelectedStopId] = useState(null);
+  const announcements = useAnnouncements();
 
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) ?? null;
   const visibleRoutes = selectedRoute ? [selectedRoute] : routes;
@@ -53,6 +56,8 @@ export default function Passenger() {
   };
 
   const firstName = user?.name.split(' ')[0];
+  // Network-wide notices plus those for the selected route (or all route notices when none is selected)
+  const visibleAnnouncements = announcements.filter((a) => !a.route || !selectedRoute || a.route.id === selectedRoute.id);
 
   return (
     <PassengerLayout>
@@ -86,6 +91,13 @@ export default function Passenger() {
 
           {!loading && !error && (
             <div className="space-y-3">
+              {visibleAnnouncements.length > 0 && (
+                <section aria-label="Elanlar" className="space-y-2">
+                  {visibleAnnouncements.slice(0, 3).map((a) => (
+                    <AnnouncementCard key={a.id} announcement={a} />
+                  ))}
+                </section>
+              )}
               <section className="card p-4">
                 <h2 className="mb-3 font-semibold text-slate-900">Marşrut</h2>
                 <RouteSelector

@@ -22,7 +22,7 @@ export default function RouteSelector({ routes, selectedRouteId, onSelect, densi
     }`;
 
   return (
-    <div ref={stripRef} className="scrollbar-none -mx-1 flex select-none gap-2 overflow-x-auto px-1 pb-1">
+    <div ref={stripRef} className="scrollbar-none -mx-1 flex select-none gap-2 overflow-x-auto px-1 py-1">
       <button type="button" className={pill(selectedRouteId === null)} onClick={() => onSelect(null)}>
         <span className="px-1.5">Hamısı</span>
       </button>
