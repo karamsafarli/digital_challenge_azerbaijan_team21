@@ -1,12 +1,16 @@
+name: smart-transit
+
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: transit
       POSTGRES_PASSWORD: transit
       POSTGRES_DB: transit
     ports:
-      - "5432:5432"
+      # Host port is configurable in case 5432 is already used on the machine (DB_PORT=5433 docker compose up)
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -17,6 +21,7 @@ services:
 
   backend:
     build: ./backend
+    restart: unless-stopped
     environment:
       PORT: 4000
       DATABASE_URL: postgresql://transit:transit@db:5432/transit?schema=public
@@ -26,17 +31,25 @@ services:
       REPORT_COOLDOWN_SECONDS: ${REPORT_COOLDOWN_SECONDS:-30}
       JWT_SECRET: ${JWT_SECRET:-smart-transit-demo-secret}
     ports:
-      - "4000:4000"
+      - "${API_PORT:-4000}:4000"
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/api/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
 
   frontend:
     build: ./frontend
+    restart: unless-stopped
     ports:
-      - "5173:80"
+      - "${WEB_PORT:-8080}:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   pgdata:
