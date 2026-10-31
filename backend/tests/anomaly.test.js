@@ -67,6 +67,26 @@ describe('evaluateAnomaly', () => {
     expect(result).toMatchObject({ triggered: false, reason: 'ACTIVE_ALERT_EXISTS' });
   });
 
+  it('does not re-alert right after the operator resolved the previous alert', () => {
+    const result = evaluateAnomaly({
+      snapshots: snapshotSeries(12),
+      reports: highReports(5),
+      now,
+      lastResolvedAt: minutesAgo(3),
+    });
+    expect(result).toMatchObject({ triggered: false, reason: 'RECENTLY_RESOLVED' });
+  });
+
+  it('alerts again if density stays HIGH for a full window after the resolution', () => {
+    const result = evaluateAnomaly({
+      snapshots: snapshotSeries(12),
+      reports: highReports(5),
+      now,
+      lastResolvedAt: minutesAgo(11),
+    });
+    expect(result.triggered).toBe(true);
+  });
+
   it('respects a custom window (demo mode)', () => {
     const result = evaluateAnomaly({
       snapshots: snapshotSeries(1.5),

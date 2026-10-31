@@ -43,7 +43,7 @@ export function analyzeRoute(route, now = new Date()) {
     };
     setLatestDensity(route.id, summary);
 
-    const [snapshots, activeAlert] = await Promise.all([
+    const [snapshots, activeAlert, lastResolved] = await Promise.all([
       prisma.densitySnapshot.findMany({
         where: {
           routeId: route.id,
@@ -52,6 +52,11 @@ export function analyzeRoute(route, now = new Date()) {
         select: { level: true, createdAt: true },
       }),
       prisma.alert.findFirst({ where: { routeId: route.id, status: { in: ['OPEN', 'ACKNOWLEDGED'] } } }),
+      prisma.alert.findFirst({
+        where: { routeId: route.id, status: 'RESOLVED' },
+        orderBy: { resolvedAt: 'desc' },
+        select: { resolvedAt: true },
+      }),
     ]);
 
     const result = evaluateAnomaly({
@@ -62,6 +67,7 @@ export function analyzeRoute(route, now = new Date()) {
       minHighReports: config.alertMinReports,
       maxGapMinutes: MAX_GAP_MINUTES,
       hasActiveAlert: Boolean(activeAlert),
+      lastResolvedAt: lastResolved?.resolvedAt ?? null,
     });
 
     let alert = null;

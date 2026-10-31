@@ -15,6 +15,8 @@ export function buildAlertMessage(routeNumber, windowMinutes) {
  * @param options.minHighReports  HIGH passenger reports required inside the window
  * @param options.maxGapMinutes   largest allowed hole between snapshots (data must be continuous)
  * @param options.hasActiveAlert  an OPEN/ACKNOWLEDGED alert already exists -> do not duplicate
+ * @param options.lastResolvedAt  when the operator last resolved an alert for this route; the HIGH
+ *                                period must lie entirely after it (no instant re-alert after a fix)
  */
 export function evaluateAnomaly({
   snapshots = [],
@@ -24,6 +26,7 @@ export function evaluateAnomaly({
   minHighReports = 3,
   maxGapMinutes = 2,
   hasActiveAlert = false,
+  lastResolvedAt = null,
 }) {
   const windowStart = new Date(now.getTime() - windowMinutes * 60000);
   const highReportCount = reports.filter(
@@ -32,6 +35,9 @@ export function evaluateAnomaly({
   const base = { triggered: false, highReportCount };
 
   if (hasActiveAlert) return { ...base, reason: 'ACTIVE_ALERT_EXISTS' };
+  if (lastResolvedAt && new Date(lastResolvedAt) > windowStart) {
+    return { ...base, reason: 'RECENTLY_RESOLVED' };
+  }
 
   const sorted = [...snapshots]
     .map((s) => ({ ...s, createdAt: new Date(s.createdAt) }))

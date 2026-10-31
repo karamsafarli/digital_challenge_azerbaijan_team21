@@ -1,5 +1,6 @@
 import { NavLink, Route, Routes } from 'react-router-dom';
 import Passenger from './pages/Passenger.jsx';
+import Operator from './pages/Operator.jsx';
 import { useSocketStatus } from './hooks/useSocket.js';
 
 function LiveBadge() {
@@ -41,7 +42,7 @@ export default function App() {
       <main className="mx-auto max-w-7xl px-4 py-4">
         <Routes>
           <Route path="/" element={<Passenger />} />
-          <Route path="/operator" element={<p>Operator paneli (Addım 6)</p>} />
+          <Route path="/operator" element={<Operator />} />
         </Routes>
       </main>
     </div>
