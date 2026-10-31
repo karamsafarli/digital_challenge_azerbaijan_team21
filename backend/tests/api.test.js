@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
-import { createMockPrisma } from './helpers/mockPrisma.js';
+import { bearer, createMockPrisma, operatorToken, passengerToken } from './helpers/mockPrisma.js';
+
+const AS_PASSENGER = bearer(passengerToken);
+const AS_OPERATOR = bearer(operatorToken);
 
 // Mock DB and analytics engine so these tests cover the HTTP layer (validation, status codes, rules).
 const db = vi.hoisted(() => ({ prisma: null }));
@@ -30,7 +33,7 @@ describe('POST /api/reports', () => {
     prisma.crowdReport.findFirst.mockResolvedValue(null);
     prisma.crowdReport.create.mockResolvedValue({ id: 10, ...valid });
 
-    const res = await request(app).post('/api/reports').send(valid);
+    const res = await request(app).post('/api/reports').set(AS_PASSENGER).send(valid);
 
     expect(res.status).toBe(201);
     expect(res.body.report.id).toBe(10);
@@ -44,7 +47,7 @@ describe('POST /api/reports', () => {
     [{ routeId: -3, level: 'HIGH' }, 'body.routeId'],
     [{ routeId: 1, level: 'HIGH', clientId: 'x'.repeat(65) }, 'body.clientId'],
   ])('rejects invalid body %j', async (body, path) => {
-    const res = await request(app).post('/api/reports').send(body);
+    const res = await request(app).post('/api/reports').set(AS_PASSENGER).send(body);
     expect(res.status).toBe(400);
     expect(res.body.details.map((d) => d.path)).toContain(path);
     expect(prisma.crowdReport.create).not.toHaveBeenCalled();
@@ -52,14 +55,14 @@ describe('POST /api/reports', () => {
 
   it('returns 404 for an unknown route', async () => {
     prisma.route.findUnique.mockResolvedValue(null);
-    const res = await request(app).post('/api/reports').send(valid);
+    const res = await request(app).post('/api/reports').set(AS_PASSENGER).send(valid);
     expect(res.status).toBe(404);
   });
 
   it('rejects a bus that does not belong to the route', async () => {
     prisma.route.findUnique.mockResolvedValue(ROUTE);
     prisma.bus.findUnique.mockResolvedValue({ routeId: 2 });
-    const res = await request(app).post('/api/reports').send({ ...valid, busId: 7 });
+    const res = await request(app).post('/api/reports').set(AS_PASSENGER).send({ ...valid, busId: 7 });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/Avtobus/);
   });
@@ -67,14 +70,14 @@ describe('POST /api/reports', () => {
   it('rejects a stop that is not on the route', async () => {
     prisma.route.findUnique.mockResolvedValue(ROUTE);
     prisma.routeStop.findFirst.mockResolvedValue(null);
-    const res = await request(app).post('/api/reports').send({ ...valid, stopId: 3 });
+    const res = await request(app).post('/api/reports').set(AS_PASSENGER).send({ ...valid, stopId: 3 });
     expect(res.status).toBe(400);
   });
 
   it('throttles repeated reports from the same device (429)', async () => {
     prisma.route.findUnique.mockResolvedValue(ROUTE);
     prisma.crowdReport.findFirst.mockResolvedValue({ id: 9 });
-    const res = await request(app).post('/api/reports').send(valid);
+    const res = await request(app).post('/api/reports').set(AS_PASSENGER).send(valid);
     expect(res.status).toBe(429);
     expect(prisma.crowdReport.create).not.toHaveBeenCalled();
   });
@@ -83,7 +86,7 @@ describe('POST /api/reports', () => {
     prisma.route.findUnique.mockResolvedValue(null);
     const statuses = [];
     for (let i = 0; i < 22; i += 1) {
-      statuses.push((await request(app).post('/api/reports').send(valid)).status);
+      statuses.push((await request(app).post('/api/reports').set(AS_PASSENGER).send(valid)).status);
     }
     expect(statuses).toContain(429);
   });
@@ -137,7 +140,7 @@ describe('PATCH /api/operator/alerts/:id', () => {
     prisma.alert.findUnique.mockResolvedValue({ id: 1, status: 'OPEN', acknowledgedAt: null });
     prisma.alert.update.mockImplementation(({ data }) => Promise.resolve({ id: 1, ...data }));
 
-    const res = await request(app).patch('/api/operator/alerts/1').send({ status: 'ACKNOWLEDGED' });
+    const res = await request(app).patch('/api/operator/alerts/1').set(AS_OPERATOR).send({ status: 'ACKNOWLEDGED' });
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ACKNOWLEDGED');
@@ -146,33 +149,33 @@ describe('PATCH /api/operator/alerts/:id', () => {
 
   it('refuses to reopen a resolved alert (409)', async () => {
     prisma.alert.findUnique.mockResolvedValue({ id: 1, status: 'RESOLVED' });
-    const res = await request(app).patch('/api/operator/alerts/1').send({ status: 'ACKNOWLEDGED' });
+    const res = await request(app).patch('/api/operator/alerts/1').set(AS_OPERATOR).send({ status: 'ACKNOWLEDGED' });
     expect(res.status).toBe(409);
     expect(prisma.alert.update).not.toHaveBeenCalled();
   });
 
   it('rejects an invalid status', async () => {
-    const res = await request(app).patch('/api/operator/alerts/1').send({ status: 'OPEN' });
+    const res = await request(app).patch('/api/operator/alerts/1').set(AS_OPERATOR).send({ status: 'OPEN' });
     expect(res.status).toBe(400);
   });
 
   it('returns 404 for an unknown alert', async () => {
     prisma.alert.findUnique.mockResolvedValue(null);
-    const res = await request(app).patch('/api/operator/alerts/42').send({ status: 'RESOLVED' });
+    const res = await request(app).patch('/api/operator/alerts/42').set(AS_OPERATOR).send({ status: 'RESOLVED' });
     expect(res.status).toBe(404);
   });
 });
 
 describe('GET /api/operator/alerts', () => {
   it('defaults to active (OPEN + ACKNOWLEDGED) alerts', async () => {
-    await request(app).get('/api/operator/alerts');
+    await request(app).get('/api/operator/alerts').set(AS_OPERATOR);
     expect(prisma.alert.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { status: { in: ['OPEN', 'ACKNOWLEDGED'] } }, take: 50 }),
     );
   });
 
   it('rejects an unknown status filter', async () => {
-    expect((await request(app).get('/api/operator/alerts?status=FOO')).status).toBe(400);
+    expect((await request(app).get('/api/operator/alerts?status=FOO').set(AS_OPERATOR)).status).toBe(400);
   });
 });
 

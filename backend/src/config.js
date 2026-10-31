@@ -21,4 +21,6 @@ export const config = {
   // Anti-spam: one report per client per route within this many seconds
   reportCooldownSeconds: num(process.env.REPORT_COOLDOWN_SECONDS, 30),
   reportRateLimitPerMinute: num(process.env.REPORT_RATE_LIMIT_PER_MINUTE, 20),
+  jwtSecret: process.env.JWT_SECRET || 'dev-only-secret-change-me',
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '12h',
 };

@@ -24,6 +24,7 @@ services:
       ALERT_WINDOW_MINUTES: ${ALERT_WINDOW_MINUTES:-10}
       ALERT_MIN_REPORTS: ${ALERT_MIN_REPORTS:-3}
       REPORT_COOLDOWN_SECONDS: ${REPORT_COOLDOWN_SECONDS:-30}
+      JWT_SECRET: ${JWT_SECRET:-smart-transit-demo-secret}
     ports:
       - "4000:4000"
     depends_on:

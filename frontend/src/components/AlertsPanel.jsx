@@ -1,11 +1,21 @@
 import { useState } from 'react';
+import { BellRing, CheckCheck, CheckCircle2, Clock3, Eye } from 'lucide-react';
 import { api, errorMessage } from '../api/client.js';
 import { formatTime } from '../utils/format.js';
 
 const STATUS_META = {
   OPEN: { label: 'Yeni', className: 'bg-red-600 text-white' },
-  ACKNOWLEDGED: { label: 'Qəbul edilib', className: 'bg-amber-100 text-amber-800' },
+  ACKNOWLEDGED: { label: 'İcradadır', className: 'bg-amber-100 text-amber-800 ring-1 ring-inset ring-amber-600/20' },
 };
+
+function Metric({ label, value }) {
+  return (
+    <div className="rounded-lg bg-white/70 px-2 py-1.5 text-center ring-1 ring-slate-900/5">
+      <div className="text-sm font-bold tabular-nums text-slate-900">{value}</div>
+      <div className="text-[10px] uppercase tracking-wide text-slate-500">{label}</div>
+    </div>
+  );
+}
 
 function AlertItem({ alert, highlighted }) {
   const [busy, setBusy] = useState(false);
@@ -23,50 +33,58 @@ function AlertItem({ alert, highlighted }) {
     }
   };
 
+  const open = alert.status === 'OPEN';
   const meta = STATUS_META[alert.status];
   return (
     <li
-      className={`rounded-lg border p-3 ${
-        alert.status === 'OPEN' ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white'
-      } ${highlighted ? 'animate-pulse' : ''}`}
+      className={`animate-fade-in rounded-2xl p-4 ring-1 ${open ? 'bg-red-50 ring-red-200' : 'bg-amber-50/50 ring-amber-200'} ${
+        highlighted ? 'ring-2 ring-red-500' : ''
+      }`}
     >
-      <div className="mb-1 flex items-center gap-2">
+      <div className="flex items-center gap-2">
         <span
-          className="inline-flex min-w-[2.5rem] justify-center rounded-md px-1.5 py-0.5 text-sm font-bold text-white"
+          className="inline-flex h-8 min-w-[2.75rem] items-center justify-center rounded-lg px-1.5 text-sm font-bold text-white shadow-sm"
           style={{ backgroundColor: alert.route?.color }}
         >
           {alert.route?.number}
         </span>
-        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${meta?.className}`}>{meta?.label}</span>
-        <span className="ml-auto text-xs text-slate-500">{formatTime(alert.createdAt)}</span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-slate-900">{alert.route?.name}</p>
+          <p className="flex items-center gap-1 text-xs text-slate-500">
+            <Clock3 className="h-3 w-3" /> {formatTime(alert.createdAt)}
+          </p>
+        </div>
+        <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta?.className}`}>{meta?.label}</span>
       </div>
-      <p className="text-sm font-medium text-slate-900">{alert.message}</p>
+
+      <p className="mt-3 text-sm font-medium leading-snug text-slate-800">{alert.message}</p>
+
       {alert.details && (
-        <p className="mt-1 text-xs text-slate-500">
-          {alert.details.highReportCount} Yüksək bildiriş · sıxlıq indeksi {Math.round(alert.details.score * 100)}% ·
-          orta doluluq {Math.round(alert.details.avgOccupancy * 100)}%
-          {alert.details.highSince && ` · ${formatTime(alert.details.highSince)}-dan bəri Yüksək`}
-        </p>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <Metric label="Yüksək bildiriş" value={alert.details.highReportCount} />
+          <Metric label="Sıxlıq indeksi" value={`${Math.round(alert.details.score * 100)}%`} />
+          <Metric label="Doluluq" value={`${Math.round(alert.details.avgOccupancy * 100)}%`} />
+        </div>
       )}
+      {alert.details?.highSince && (
+        <p className="mt-2 text-xs text-slate-500">{formatTime(alert.details.highSince)}-dan bəri fasiləsiz Yüksək</p>
+      )}
+
       {error && <p className="mt-2 text-xs text-red-700">{error}</p>}
-      <div className="mt-2 flex gap-2">
-        {alert.status === 'OPEN' && (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => update('ACKNOWLEDGED')}
-            className="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
-          >
-            Qəbul et
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {open && (
+          <button type="button" disabled={busy} onClick={() => update('ACKNOWLEDGED')} className="btn-secondary px-3 py-1.5 text-xs">
+            <Eye className="h-3.5 w-3.5" /> Qəbul et
           </button>
         )}
         <button
           type="button"
           disabled={busy}
           onClick={() => update('RESOLVED')}
-          className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+          className="btn bg-green-600 px-3 py-1.5 text-xs text-white hover:bg-green-700"
         >
-          Əlavə avtobus ayrıldı · Bağla
+          <CheckCheck className="h-3.5 w-3.5" /> Əlavə avtobus ayrıldı
         </button>
       </div>
     </li>
@@ -75,15 +93,23 @@ function AlertItem({ alert, highlighted }) {
 
 export default function AlertsPanel({ alerts, highlightId }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-base font-semibold">Anomaliya xəbərdarlıqları</h2>
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{alerts.length} aktiv</span>
+    <section id="alerts" className="card scroll-mt-24 p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 font-semibold text-slate-900">
+          <BellRing className="h-4 w-4 text-red-500" /> Anomaliya xəbərdarlıqları
+        </h2>
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${alerts.length ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
+          {alerts.length} aktiv
+        </span>
       </div>
       {alerts.length === 0 ? (
-        <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">Aktiv xəbərdarlıq yoxdur.</p>
+        <div className="flex flex-col items-center rounded-2xl bg-slate-50 px-4 py-8 text-center">
+          <CheckCircle2 className="h-10 w-10 text-green-500" />
+          <p className="mt-2 font-semibold text-slate-900">Hər şey qaydasındadır</p>
+          <p className="mt-1 text-sm text-slate-500">Hazırda əlavə avtobus tələb edən xətt yoxdur.</p>
+        </div>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-3">
           {alerts.map((alert) => (
             <AlertItem key={alert.id} alert={alert} highlighted={alert.id === highlightId} />
           ))}

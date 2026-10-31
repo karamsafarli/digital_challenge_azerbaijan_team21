@@ -1,93 +1,108 @@
 import { useState } from 'react';
+import { Megaphone, User } from 'lucide-react';
 import { api, errorMessage } from '../api/client.js';
-import { getClientId, LEVEL_META, LEVELS } from '../utils/format.js';
+import { useToast } from '../context/ToastContext.jsx';
+import { LEVEL_META, LEVELS } from '../utils/format.js';
 
-const BUTTON_STYLES = {
-  LOW: 'bg-green-600 hover:bg-green-700',
-  MEDIUM: 'bg-amber-500 hover:bg-amber-600',
-  HIGH: 'bg-red-600 hover:bg-red-700',
+const TILES = {
+  LOW: { people: 1, hint: 'Boş yerlər var', idle: 'hover:bg-green-50 hover:ring-green-300', icon: 'text-green-600' },
+  MEDIUM: { people: 2, hint: 'Ayaqda durmaq olar', idle: 'hover:bg-amber-50 hover:ring-amber-300', icon: 'text-amber-600' },
+  HIGH: { people: 3, hint: 'Çox sıxdır', idle: 'hover:bg-red-50 hover:ring-red-300', icon: 'text-red-600' },
 };
 
-/** Passenger crowd report: pick a bus (optional) and tap Aşağı / Orta / Yüksək. */
+function CrowdIcon({ count, className }) {
+  return (
+    <span className={`flex -space-x-2 ${className}`} aria-hidden>
+      {Array.from({ length: count }, (_, i) => (
+        <User key={i} className="h-6 w-6 rounded-full bg-white" strokeWidth={2.5} />
+      ))}
+    </span>
+  );
+}
+
+/** Passenger crowd report: pick a bus (optional) and tap one of three levels. */
 export default function ReportPanel({ route, buses, stopId }) {
-  const [busId, setBusId] = useState('');
-  const [status, setStatus] = useState(null); // { type: 'ok' | 'error', text }
-  const [sending, setSending] = useState(false);
+  const toast = useToast();
+  const [busId, setBusId] = useState(null);
+  const [sending, setSending] = useState(null);
+  const [lastSent, setLastSent] = useState(null);
 
   if (!route) {
     return (
-      <section className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
-        Sıxlıq bildirmək üçün əvvəlcə marşrut seçin.
+      <section className="card flex items-center gap-3 p-4 text-sm text-slate-500">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100">
+          <Megaphone className="h-5 w-5 text-slate-400" />
+        </span>
+        Avtobusun nə qədər dolu olduğunu bildirmək üçün yuxarıdan marşrut seçin.
       </section>
     );
   }
 
   const send = async (level) => {
-    setSending(true);
-    setStatus(null);
+    setSending(level);
     try {
       const { density } = await api.createReport({
         routeId: route.id,
         level,
-        busId: busId ? Number(busId) : undefined,
+        busId: busId ?? undefined,
         stopId: stopId && route.stops.some((s) => s.id === stopId) ? stopId : undefined,
-        clientId: getClientId(),
       });
-      setStatus({
-        type: 'ok',
-        text: `Təşəkkürlər! Bildirişiniz qeydə alındı. Xətt №${route.number} üzrə cari sıxlıq: ${LEVEL_META[density.level].label}.`,
-      });
+      setLastSent(level);
+      toast.success('Təşəkkürlər! Bildirişiniz qeydə alındı', `Xətt №${route.number} üzrə cari sıxlıq: ${LEVEL_META[density.level].label}`);
     } catch (err) {
-      setStatus({ type: 'error', text: errorMessage(err) });
+      toast.error('Bildiriş göndərilmədi', errorMessage(err));
     } finally {
-      setSending(false);
+      setSending(null);
     }
   };
 
+  const chip = (active) =>
+    `shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium ring-1 transition ${
+      active ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white text-slate-600 ring-slate-200 hover:ring-slate-300'
+    }`;
+
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="mb-1 text-base font-semibold">Sıxlığı bildir · №{route.number}</h2>
-      <p className="mb-3 text-xs text-slate-500">Avtobusda və ya dayanacaqda nə qədər sıxlıq var?</p>
+    <section className="card p-4">
+      <h2 className="flex items-center gap-2 font-semibold text-slate-900">
+        <Megaphone className="h-4 w-4 text-brand-600" /> Avtobus nə qədər doludur?
+      </h2>
+      <p className="mt-1 text-xs text-slate-500">Bildirişiniz digər sərnişinlərə və dispetçerlərə kömək edir.</p>
 
-      <label className="mb-1 block text-xs font-medium text-slate-500" htmlFor="bus-select">
-        Avtobus (istəyə görə)
-      </label>
-      <select
-        id="bus-select"
-        className="mb-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-        value={busId}
-        onChange={(e) => setBusId(e.target.value)}
-      >
-        <option value="">Bütün xətt üzrə</option>
-        {buses.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.plate}
-          </option>
-        ))}
-      </select>
-
-      <div className="grid grid-cols-3 gap-2">
-        {LEVELS.map((level) => (
-          <button
-            key={level}
-            type="button"
-            disabled={sending}
-            onClick={() => send(level)}
-            className={`rounded-lg px-2 py-3 text-sm font-semibold text-white shadow-sm transition disabled:opacity-50 ${BUTTON_STYLES[level]}`}
-          >
-            {LEVEL_META[level].label}
+      {buses.length > 0 && (
+        <div className="scrollbar-none -mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1 py-0.5">
+          <button type="button" className={chip(busId === null)} onClick={() => setBusId(null)}>
+            Bütün xətt
           </button>
-        ))}
-      </div>
-
-      {status && (
-        <p
-          role="status"
-          className={`mt-3 rounded p-2 text-sm ${status.type === 'ok' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-700'}`}
-        >
-          {status.text}
-        </p>
+          {buses.map((b) => (
+            <button key={b.id} type="button" className={chip(busId === b.id)} onClick={() => setBusId(b.id)}>
+              {b.plate}
+            </button>
+          ))}
+        </div>
       )}
+
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {LEVELS.map((level) => {
+          const tile = TILES[level];
+          const sent = lastSent === level;
+          return (
+            <button
+              key={level}
+              type="button"
+              disabled={sending !== null}
+              onClick={() => send(level)}
+              className={`flex flex-col items-center gap-2 rounded-2xl bg-white px-2 py-3.5 ring-1 transition active:scale-95 disabled:opacity-60 ${
+                sent ? 'ring-2' : `ring-slate-200 ${tile.idle}`
+              }`}
+              style={sent ? { '--tw-ring-color': LEVEL_META[level].color } : undefined}
+            >
+              <CrowdIcon count={tile.people} className={tile.icon} />
+              <span className="text-sm font-semibold text-slate-900">{sending === level ? '...' : LEVEL_META[level].label}</span>
+              <span className="text-[11px] leading-tight text-slate-500">{tile.hint}</span>
+            </button>
+          );
+        })}
+      </div>
     </section>
   );
 }

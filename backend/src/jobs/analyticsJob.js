@@ -3,7 +3,7 @@ import { config } from '../config.js';
 import { computeRouteDensity } from '../services/density.js';
 import { ALERT_TYPE, buildAlertMessage, evaluateAnomaly } from '../services/anomaly.js';
 import { getAllLatestDensity, setLatestDensity } from '../services/densityStore.js';
-import { broadcast, EVENTS } from '../socket.js';
+import { broadcast, broadcastToOperators, EVENTS } from '../socket.js';
 
 const MAX_GAP_MINUTES = 2;
 
@@ -88,7 +88,7 @@ export function analyzeRoute(route, now = new Date()) {
         include: { route: { select: { number: true, name: true, color: true } } },
       });
       console.log(`ALERT: ${alert.message}`);
-      broadcast(EVENTS.ALERT_NEW, alert);
+      broadcastToOperators(EVENTS.ALERT_NEW, alert);
     }
 
     return { density: summary, anomaly: result, alert };

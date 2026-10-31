@@ -25,21 +25,14 @@ export function formatDistance(metres) {
   return metres < 1000 ? `${metres} m` : `${(metres / 1000).toFixed(1)} km`;
 }
 
-export function formatTime(value) {
-  return new Date(value).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const MONTHS_AZ = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avqust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr'];
+
+/** "31 oktyabr" — browsers often lack Azerbaijani month names, so format by hand. */
+export function formatDate(value) {
+  const d = new Date(value);
+  return `${d.getDate()} ${MONTHS_AZ[d.getMonth()]}`;
 }
 
-/** Anonymous per-device id so the backend can throttle duplicate reports. */
-export function getClientId() {
-  const KEY = 'smart-transit-client-id';
-  try {
-    let id = localStorage.getItem(KEY);
-    if (!id) {
-      id = `web-${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
-      localStorage.setItem(KEY, id);
-    }
-    return id;
-  } catch {
-    return undefined;
-  }
+export function formatTime(value) {
+  return new Date(value).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }

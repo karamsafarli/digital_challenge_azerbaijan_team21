@@ -1,9 +1,10 @@
-import LevelBadge from './LevelBadge.jsx';
+import { LEVEL_META } from '../utils/format.js';
 
-export function RouteNumber({ route, className = '' }) {
+export function RouteNumber({ route, size = 'md', className = '' }) {
+  const sizes = { sm: 'h-6 min-w-[2.25rem] text-xs', md: 'h-8 min-w-[2.75rem] text-sm', lg: 'h-11 min-w-[3.5rem] text-lg' };
   return (
     <span
-      className={`inline-flex min-w-[2.5rem] justify-center rounded-md px-1.5 py-0.5 text-sm font-bold text-white ${className}`}
+      className={`inline-flex items-center justify-center rounded-lg px-1.5 font-bold text-white shadow-sm ${sizes[size]} ${className}`}
       style={{ backgroundColor: route.color }}
     >
       {route.number}
@@ -11,32 +12,41 @@ export function RouteNumber({ route, className = '' }) {
   );
 }
 
+/** Horizontal route pills with a live density dot. */
 export default function RouteSelector({ routes, selectedRouteId, onSelect, densityByRoute }) {
-  const itemClass = (active) =>
-    `flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm transition ${
-      active ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-slate-200 bg-white hover:bg-slate-50'
+  const pill = (active) =>
+    `flex shrink-0 items-center gap-2 rounded-xl px-2 py-1.5 text-sm font-medium ring-1 transition ${
+      active ? 'bg-brand-600 text-white ring-brand-600 shadow-sm' : 'bg-white text-slate-700 ring-slate-200 hover:ring-slate-300'
     }`;
 
   return (
-    <div className="space-y-2">
-      <button type="button" className={itemClass(selectedRouteId === null)} onClick={() => onSelect(null)}>
-        <span className="inline-flex min-w-[2.5rem] justify-center rounded-md bg-slate-700 px-1.5 py-0.5 text-sm font-bold text-white">
-          ∗
-        </span>
-        <span className="flex-1 font-medium">Bütün marşrutlar</span>
+    <div className="scrollbar-none -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+      <button type="button" className={pill(selectedRouteId === null)} onClick={() => onSelect(null)}>
+        <span className="px-1.5">Hamısı</span>
       </button>
-      {routes.map((route) => (
-        <button
-          key={route.id}
-          type="button"
-          className={itemClass(selectedRouteId === route.id)}
-          onClick={() => onSelect(route.id)}
-        >
-          <RouteNumber route={route} />
-          <span className="flex-1 truncate">{route.name}</span>
-          <LevelBadge level={densityByRoute[route.id]} />
-        </button>
-      ))}
+      {routes.map((route) => {
+        const level = densityByRoute[route.id];
+        const active = selectedRouteId === route.id;
+        return (
+          <button
+            key={route.id}
+            type="button"
+            className={pill(active)}
+            onClick={() => onSelect(route.id)}
+            aria-pressed={active}
+            aria-label={`Xətt ${route.number}${level ? `, sıxlıq ${LEVEL_META[level].label}` : ''}`}
+          >
+            <RouteNumber route={route} size="sm" />
+            {level && (
+              <span
+                className="h-2.5 w-2.5 rounded-full ring-2 ring-white"
+                style={{ backgroundColor: LEVEL_META[level].color }}
+                title={`Sıxlıq: ${LEVEL_META[level].label}`}
+              />
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }

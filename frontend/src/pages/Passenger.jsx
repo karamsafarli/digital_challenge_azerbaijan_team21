@@ -1,11 +1,36 @@
 import { useMemo, useState } from 'react';
+import { Bus, Route as RouteIcon } from 'lucide-react';
 import TransitMap from '../components/TransitMap.jsx';
-import RouteSelector from '../components/RouteSelector.jsx';
+import RouteSelector, { RouteNumber } from '../components/RouteSelector.jsx';
 import StopEtaPanel from '../components/StopEtaPanel.jsx';
 import ReportPanel from '../components/ReportPanel.jsx';
+import LevelBadge from '../components/LevelBadge.jsx';
+import PassengerLayout from '../layouts/PassengerLayout.jsx';
 import { useTransitData } from '../hooks/useTransitData.js';
+import { useAuth } from '../context/AuthContext.jsx';
+
+function SelectedRouteCard({ route, busCount, level }) {
+  return (
+    <div className="mt-3 flex items-center gap-3 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200/70">
+      <RouteNumber route={route} size="lg" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-semibold text-slate-900">{route.name}</p>
+        <p className="mt-0.5 flex items-center gap-3 text-xs text-slate-500">
+          <span className="inline-flex items-center gap-1">
+            <RouteIcon className="h-3 w-3" /> {(route.lengthM / 1000).toFixed(1)} km
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Bus className="h-3 w-3" /> {busCount} avtobus xəttdə
+          </span>
+        </p>
+      </div>
+      <LevelBadge level={level} />
+    </div>
+  );
+}
 
 export default function Passenger() {
+  const { user } = useAuth();
   const { routes, buses, densityByRoute, loading, error } = useTransitData();
   const [selectedRouteId, setSelectedRouteId] = useState(null);
   const [selectedStopId, setSelectedStopId] = useState(null);
@@ -24,47 +49,78 @@ export default function Passenger() {
   const selectRoute = (routeId) => {
     setSelectedRouteId(routeId);
     const route = routes.find((r) => r.id === routeId);
-    // keep the stop only if the new route serves it
     if (route && !route.stops.some((s) => s.id === selectedStopId)) setSelectedStopId(null);
   };
 
-  if (loading) return <p className="text-slate-500">Yüklənir...</p>;
-  if (error) return <p className="rounded bg-red-50 p-3 text-red-700">{error}</p>;
+  const firstName = user?.name.split(' ')[0];
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
-      <div className="order-2 space-y-4 lg:order-1">
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="mb-3 text-base font-semibold">Marşrut</h2>
-          <RouteSelector
-            routes={routes}
-            selectedRouteId={selectedRouteId}
-            onSelect={selectRoute}
-            densityByRoute={densityByRoute}
+    <PassengerLayout>
+      <div className="flex h-full flex-col lg:block">
+        <div className="h-[42vh] shrink-0 lg:absolute lg:inset-0 lg:h-auto">
+          <TransitMap
+            routes={visibleRoutes}
+            buses={visibleBuses}
+            selectedStopId={selectedStopId}
+            onSelectStop={(stop) => setSelectedStopId(stop.id)}
+            fitPadding={[440, 40]}
           />
-        </section>
-        <StopEtaPanel
-          stops={stops}
-          selectedStopId={selectedStopId}
-          onSelectStop={setSelectedStopId}
-          routeId={selectedRouteId}
-        />
-        <ReportPanel
-          key={selectedRouteId ?? 'none'}
-          route={selectedRoute}
-          buses={visibleBuses}
-          stopId={selectedStopId}
-        />
-      </div>
+        </div>
 
-      <div className="order-1 h-[55vh] overflow-hidden rounded-xl border border-slate-200 shadow-sm lg:order-2 lg:sticky lg:top-4 lg:h-[calc(100vh-7rem)]">
-        <TransitMap
-          routes={visibleRoutes}
-          buses={visibleBuses}
-          selectedStopId={selectedStopId}
-          onSelectStop={(stop) => setSelectedStopId(stop.id)}
-        />
+        <aside className="relative z-[500] -mt-5 min-h-0 flex-1 overflow-y-auto rounded-t-3xl bg-slate-50 px-4 pb-6 pt-5 shadow-float lg:absolute lg:bottom-4 lg:left-4 lg:top-4 lg:mt-0 lg:w-[410px] lg:flex-none lg:rounded-3xl lg:bg-slate-50/95 lg:backdrop-blur">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-slate-300 lg:hidden" aria-hidden />
+
+          <div className="mb-4">
+            <p className="text-sm text-slate-500">Salam, {firstName}</p>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900">Hara gedirsiniz?</h1>
+          </div>
+
+          {loading && (
+            <div className="space-y-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-200/70" />
+              ))}
+            </div>
+          )}
+          {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+
+          {!loading && !error && (
+            <div className="space-y-3">
+              <section className="card p-4">
+                <h2 className="mb-3 font-semibold text-slate-900">Marşrut</h2>
+                <RouteSelector
+                  routes={routes}
+                  selectedRouteId={selectedRouteId}
+                  onSelect={selectRoute}
+                  densityByRoute={densityByRoute}
+                />
+                {selectedRoute && (
+                  <SelectedRouteCard
+                    route={selectedRoute}
+                    busCount={visibleBuses.length}
+                    level={densityByRoute[selectedRoute.id]}
+                  />
+                )}
+              </section>
+
+              <StopEtaPanel
+                route={selectedRoute}
+                stops={stops}
+                selectedStopId={selectedStopId}
+                onSelectStop={setSelectedStopId}
+                routeId={selectedRouteId}
+              />
+
+              <ReportPanel
+                key={selectedRouteId ?? 'none'}
+                route={selectedRoute}
+                buses={visibleBuses}
+                stopId={selectedStopId}
+              />
+            </div>
+          )}
+        </aside>
       </div>
-    </div>
+    </PassengerLayout>
   );
 }

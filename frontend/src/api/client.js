@@ -2,14 +2,47 @@ import axios from 'axios';
 
 const http = axios.create({ baseURL: '/api', timeout: 10000 });
 
+let authToken = null;
+let onUnauthorized = null;
+
+export function setAuthToken(token) {
+  authToken = token;
+}
+export const getAuthToken = () => authToken;
+
+/** Called when the API rejects our token (expired / invalid) so the app can log out. */
+export function setUnauthorizedHandler(handler) {
+  onUnauthorized = handler;
+}
+
+http.interceptors.request.use((request) => {
+  if (authToken) request.headers.Authorization = `Bearer ${authToken}`;
+  return request;
+});
+
+http.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const isAuthCall = error.config?.url?.startsWith('/auth/');
+    if (error.response?.status === 401 && authToken && !isAuthCall) onUnauthorized?.();
+    return Promise.reject(error);
+  },
+);
+
 /** Turn an axios error into a user-facing message from the API (or a generic one). */
 export function errorMessage(err) {
-  return err?.response?.data?.error || 'Serverlə əlaqə alınmadı. Yenidən cəhd edin.';
+  const data = err?.response?.data;
+  if (data?.details?.length) return data.details[0].message;
+  return data?.error || 'Serverlə əlaqə alınmadı. Yenidən cəhd edin.';
 }
 
 const data = (promise) => promise.then((res) => res.data);
 
 export const api = {
+  login: (body) => data(http.post('/auth/login', body)),
+  register: (body) => data(http.post('/auth/register', body)),
+  me: () => data(http.get('/auth/me')),
+
   routes: () => data(http.get('/routes')),
   routeBuses: (routeId) => data(http.get(`/routes/${routeId}/buses`)),
   stops: () => data(http.get('/stops')),

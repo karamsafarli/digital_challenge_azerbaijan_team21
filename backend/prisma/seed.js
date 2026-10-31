@@ -1,10 +1,47 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 import { cumulativeDistances, pointAlong } from '../src/utils/geo.js';
 import { routes, stops } from './data/baku.js';
 
 const prisma = new PrismaClient();
 
+// Demo accounts (values come from env; defaults are documented in .env.example)
+const DEMO_USERS = [
+  {
+    name: 'Dispetçer',
+    email: process.env.OPERATOR_EMAIL || 'operator@smarttransit.az',
+    password: process.env.OPERATOR_PASSWORD || 'Operator2026!',
+    role: 'OPERATOR',
+  },
+  {
+    name: 'Demo Sərnişin',
+    email: process.env.DEMO_PASSENGER_EMAIL || 'sernisin@smarttransit.az',
+    password: process.env.DEMO_PASSENGER_PASSWORD || 'Sernisin2026!',
+    role: 'PASSENGER',
+  },
+];
+
+/** Accounts are created if missing on every start (independent of route data). */
+async function seedUsers() {
+  for (const user of DEMO_USERS) {
+    const exists = await prisma.user.findUnique({ where: { email: user.email } });
+    if (exists) continue;
+    await prisma.user.create({
+      data: {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        passwordHash: await bcrypt.hash(user.password, 10),
+      },
+    });
+    console.log(`Seed: ${user.role.toLowerCase()} account ${user.email} created.`);
+  }
+}
+
 async function main() {
+  await seedUsers();
+
   // Idempotent: skip when data already exists so container restarts keep history.
   if ((await prisma.route.count()) > 0 && !process.argv.includes('--force')) {
     console.log('Seed: data already present, skipping (use --force to reset).');

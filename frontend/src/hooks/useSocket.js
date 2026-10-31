@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
+import { getAuthToken } from '../api/client.js';
 
-// One shared connection for the whole app (same origin; Vite/nginx proxy /socket.io to the API).
-const socket = io({ autoConnect: true });
+// One shared connection (same origin; Vite/nginx proxy /socket.io to the API).
+// The token is sent on every (re)connect so operators join the private alerts room.
+const socket = io({ autoConnect: true, auth: (cb) => cb({ token: getAuthToken() }) });
+
+/** Reconnect after login/logout so the server sees the new identity. */
+export function reconnectSocket() {
+  socket.disconnect();
+  socket.connect();
+}
 
 /** Subscribe to a server event; the latest handler is always used without resubscribing. */
 export function useSocketEvent(event, handler) {

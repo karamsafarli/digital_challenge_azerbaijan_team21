@@ -20,6 +20,21 @@ enum AlertStatus {
   RESOLVED
 }
 
+enum Role {
+  PASSENGER
+  OPERATOR
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         Role          @default(PASSENGER)
+  createdAt    DateTime      @default(now())
+  reports      CrowdReport[]
+}
+
 model Route {
   id        Int               @id @default(autoincrement())
   number    String            @unique
@@ -98,12 +113,15 @@ model CrowdReport {
   stopId    Int?
   level     CrowdLevel
   clientId  String?
+  userId    Int?
   createdAt DateTime   @default(now())
   route     Route      @relation(fields: [routeId], references: [id], onDelete: Cascade)
   bus       Bus?       @relation(fields: [busId], references: [id], onDelete: SetNull)
   stop      Stop?      @relation(fields: [stopId], references: [id], onDelete: SetNull)
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([routeId, createdAt])
+  @@index([userId, routeId, createdAt])
 }
 
 model DensitySnapshot {

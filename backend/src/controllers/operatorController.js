@@ -3,7 +3,7 @@ import { config } from '../config.js';
 import { analyzeRoute } from '../jobs/analyticsJob.js';
 import { getAllLatestDensity, setLatestDensity } from '../services/densityStore.js';
 import { listRushes, startRush, stopRush } from '../services/rushScenario.js';
-import { broadcast, EVENTS } from '../socket.js';
+import { broadcast, broadcastToOperators, EVENTS } from '../socket.js';
 import { HttpError, notFound } from '../utils/httpError.js';
 
 const alertInclude = { route: { select: { number: true, name: true, color: true } } };
@@ -82,7 +82,7 @@ export async function updateAlert(req, res) {
     },
     include: alertInclude,
   });
-  broadcast(EVENTS.ALERT_UPDATED, updated);
+  broadcastToOperators(EVENTS.ALERT_UPDATED, updated);
   res.json(updated);
 }
 

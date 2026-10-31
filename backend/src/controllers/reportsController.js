@@ -5,9 +5,10 @@ import { getAllLatestDensity } from '../services/densityStore.js';
 import { broadcast, EVENTS } from '../socket.js';
 import { HttpError, notFound } from '../utils/httpError.js';
 
-/** Passenger crowd report: validate references, throttle duplicates, recompute density at once. */
+/** Passenger crowd report: validate references, throttle per account, recompute density at once. */
 export async function createReport(req, res) {
   const { routeId, busId, stopId, level, clientId } = req.body;
+  const userId = req.user.id;
 
   const route = await prisma.route.findUnique({
     where: { id: routeId },
@@ -24,20 +25,23 @@ export async function createReport(req, res) {
     if (!onRoute) throw new HttpError(400, 'Dayanacaq bu marşrutda deyil');
   }
 
-  if (clientId && config.reportCooldownSeconds > 0) {
+  if (config.reportCooldownSeconds > 0) {
     const recent = await prisma.crowdReport.findFirst({
       where: {
-        clientId,
+        userId,
         routeId,
         createdAt: { gte: new Date(Date.now() - config.reportCooldownSeconds * 1000) },
       },
     });
     if (recent) {
-      throw new HttpError(429, `Bu marşrut üçün artıq bildiriş göndərmisiniz. ${config.reportCooldownSeconds} saniyə sonra yenidən cəhd edin.`);
+      throw new HttpError(
+        429,
+        `Bu marşrut üçün artıq bildiriş göndərmisiniz. ${config.reportCooldownSeconds} saniyə sonra yenidən cəhd edin.`,
+      );
     }
   }
 
-  const report = await prisma.crowdReport.create({ data: { routeId, busId, stopId, level, clientId } });
+  const report = await prisma.crowdReport.create({ data: { routeId, busId, stopId, level, clientId, userId } });
 
   const { density } = await analyzeRoute(route);
   broadcast(EVENTS.DENSITY_UPDATE, getAllLatestDensity());
