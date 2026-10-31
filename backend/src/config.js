@@ -18,4 +18,7 @@ export const config = {
   // Crowd reports considered when computing current density
   densityWindowMinutes: num(process.env.DENSITY_WINDOW_MINUTES, 15),
   jobsEnabled: process.env.JOBS_ENABLED !== 'false',
+  // Anti-spam: one report per client per route within this many seconds
+  reportCooldownSeconds: num(process.env.REPORT_COOLDOWN_SECONDS, 30),
+  reportRateLimitPerMinute: num(process.env.REPORT_RATE_LIMIT_PER_MINUTE, 20),
 };

@@ -2,6 +2,7 @@ import { prisma } from '../db.js';
 import { config } from '../config.js';
 import { advanceBus } from '../services/simulator.js';
 import { getLatestDensity } from '../services/densityStore.js';
+import { getRushLoad } from '../services/rushScenario.js';
 import { broadcast, EVENTS } from '../socket.js';
 
 // Typical passenger load per route (0..1); busier lines drift towards higher occupancy.
@@ -22,7 +23,8 @@ export async function simulatorTick() {
 
     const buses = await prisma.bus.findMany({ include: { route: true } });
     const updates = buses.map((bus) => {
-      const route = { ...bus.route, typicalLoad: TYPICAL_LOAD[bus.route.number] };
+      const typicalLoad = getRushLoad(bus.routeId) ?? TYPICAL_LOAD[bus.route.number];
+      const route = { ...bus.route, typicalLoad };
       const level = getLatestDensity(bus.routeId)?.level ?? 'LOW';
       return { bus, next: advanceBus(bus, route, dtSeconds, level) };
     });
