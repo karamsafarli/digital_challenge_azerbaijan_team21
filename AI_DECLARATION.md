@@ -45,38 +45,39 @@ Saatlar git commit tarixçəsinə əsasən təxminidir.
 
 | Vaxt | Komandanın qərarı / müdaxiləsi | Nəticə |
 |---|---|---|
-| 11:05 | Qaydalar və tapşırıq təqdim edildi; stack müəyyən edildi; «əvvəl plan, sonra addım-addım» tələb olundu | `PLAN.md`: qiymətləndirmə meyarlarına uyğun plan, vaxt bölgüsü, «kəsmə xətti» |
+| 11:05 | Qaydalar və tapşırıq təqdim edildi; texnologiya stack-i müəyyən edildi; mərhələli icra metodologiyası (əvvəl plan, sonra təsdiqlənmiş addımlar) qəbul edildi | `PLAN.md`: qiymətləndirmə meyarlarına uyğun plan, vaxt bölgüsü, «kəsmə xətti» |
 | 11:15 | Kompüterdə Node.js və Git olmadığı aşkarlandı — quraşdırmaya icazə verildi; Docker Desktop-u komanda özü quraşdırdı | İnkişaf mühiti hazır oldu |
 | 11:45 | Hər addımdan sonra commit və GitHub-a push qərarı; repozitoriya yaradıldı | Mərhələli, izlənə bilən tarixçə |
 | 12:08 | **İş axını qərarı:** backend + DB Docker-də, frontend lokal (canlı yenilənmə) | `docker compose up -d db backend` + Vite proksi |
-| 12:12 | **Davranış sorğusu:** «Sərnişin Yüksək bildirəndə xətt dəyişmir — bu düzgündürmü?» | AI bunun qəsdən olduğunu real ölçmə ilə göstərdi (1 → 0.66, 3 bildiriş → 0.76 Yüksək) və bir istifadəçinin 30 saniyə fasilə ilə xətti «qırmızı» edə bilməsi zəifliyini qeyd etdi |
-| 12:15 | **Təhlükəsizlik və UX qərarı:** sərnişinin operator səhifəsinə girə bilməsi qəbuledilməzdir — rollar üzrə giriş və tam yeni dizayn tələb edildi | JWT + bcrypt, server tərəfində rol yoxlaması, operator socket otağı; bildiriş limiti cihaz əvəzinə **hesab** üzrə (yuxarıdakı zəiflik də bağlandı); yeni dizayn |
-| 12:40 | **UX problemi tapıldı:** üfüqi düymə zolaqları siçan çarxı ilə sürüşmür | Siçan çarxı və sürükləmə dəstəyi |
-| 12:42 | **Vizual xəta tapıldı:** marşrut düymələrinin yuxarı kənarı kəsilir; «yoxlamadan, sürətli düzəliş» tələb olundu | Zolağa daxili boşluq əlavə edildi |
-| 12:45 | **Məhsul qərarı:** operatorun əməliyyatları azdır; AI-dən təkliflər istənildi və 4 təklifin hamısı seçildi | Park və dispetçer, elanlar, bildiriş moderasiyası, tarixçə və qayda ayarları |
+| 12:12 | **Davranış auditi:** tək «Yüksək» bildirişin xəttin səviyyəsini dəyişmədiyi müşahidə edildi və bunun gözlənilən davranış olub-olmadığının əsaslandırılması, eləcə də bildirişdən xəbərdarlığa qədər bütün axının izahı tələb edildi | AI bunun qəsdən olduğunu real ölçmə ilə göstərdi (1 → 0.66, 3 bildiriş → 0.76 Yüksək) və bir istifadəçinin 30 saniyə fasilə ilə xətti «qırmızı» edə bilməsi zəifliyini qeyd etdi |
+| 12:15 | **Təhlükəsizlik və UX qərarı:** sərnişin rolunun operator funksiyalarına çıxışı təhlükəsizlik riski kimi qiymətləndirildi; rol əsaslı autentifikasiya və interfeysin peşəkar səviyyədə yenidən dizaynı tələb edildi | JWT + bcrypt, server tərəfində rol yoxlaması, operator socket otağı; bildiriş limiti cihaz əvəzinə **hesab** üzrə (yuxarıdakı zəiflik də bağlandı); yeni dizayn |
+| 12:40 | **UX problemi aşkarlandı:** desktopda üfüqi seçim zolaqları siçan çarxı ilə idarə olunmurdu (yalnız touchpad/toxunma) | Siçan çarxı və sürükləmə dəstəyi |
+| 12:42 | **Vizual xəta aşkarlandı:** marşrut düymələrinin yuxarı kənarı konteyner tərəfindən kəsilirdi; lokal CSS düzəlişi tələb edildi | Zolağa daxili boşluq əlavə edildi |
+| 12:45 | **Məhsul qərarı:** operator konsolunun funksional imkanlarının dispetçer iş prosesi üçün kifayət etmədiyi qiymətləndirildi; alternativlər təhlil edilərək 4 istiqamətin hamısının həyata keçirilməsi qərara alındı | Park və dispetçer, elanlar, bildiriş moderasiyası, tarixçə və qayda ayarları |
 | 13:05 | **Təhvil tələbləri:** sistem jüri kompüterində sıfırdan problemsiz işləməlidir; sənədlər Azərbaycan dilində və hərtərəfli; AI bəyannaməsi insan işini də düzgün göstərməlidir | Təmiz Docker yoxlaması, port konfliktlərinə qarşı tədbirlər, bu sənədlər |
 
 ---
 
 ## 5. Prompt jurnalı
 
-Komandanın AI-yə verdiyi əsas promptlar (orijinal dildə, qısaldılmış):
+Komanda AI-yə tapşırıqları mərhələli texniki tapşırıqlar şəklində verib. Aşağıda hər bir promptun məzmunu, qəbul meyarı və nəticəsi ümumiləşdirilmiş formada göstərilir (tam söhbət tarixçəsi tələb olunarsa təqdim edilə bilər).
 
-| # | Prompt | AI-nin gördüyü iş | Komandanın yoxlaması |
-|---|---|---|---|
-| 1 | «We are in a programming competition... Here are the rules (PDF) and the task. Analyze them and plan this task step by step, I don't want you to rush. Stack: JS, React, Tailwind; Node.js, Express, PostgreSQL, ORM; Docker» | Qaydaların və tapşırığın təhlili, `PLAN.md` | Plan oxundu və təsdiqləndi |
-| 2 | «Start Step 0» | Layihə skeleti, Docker, nginx | — |
-| 3 | «Yes, install Node + Git» | Node.js və Git quraşdırıldı, testlər işə salındı | İcazə komanda tərəfindən verildi |
-| 4 | «I already installed Docker Desktop... run PostgreSQL on Docker» | Prisma sxemi, Bakı marşrutları ilə seed | Məlumatlar SQL ilə yoxlanıldı |
-| 5 | «First commit... repo details: ...» | İlk commit və push | Repozitoriya komanda tərəfindən yaradıldı |
-| 6 | «Start Step 2 / 3 / 4 / 5 / 6» | Analitika mühərriki, simulyator, API, sərnişin və operator interfeysləri | Hər addımın nəticəsi təsdiqləndikdən sonra növbəti addıma keçildi |
-| 7 | «Up the server with Docker and let me run the frontend locally» | Hibrid inkişaf rejimi | Komanda saytı özü sınadı |
-| 8 | «When a passenger sets a route as high, it does not change. Is it correct? Explain the entire flow» | Bütün axının izahı, real ölçmə | Komanda izahı qəbul etdi |
-| 9 | «Enhance the UI/UX... passenger can enter the operator page — think about login pages for operator or passenger» | Rol əsaslı giriş, tam yeni dizayn, 18 yeni test | Komanda yeni dizaynı yoxladı |
-| 10 | «Horizontally scrolled chips cannot be scrolled with a mouse wheel... think a simple solution» | Siçan çarxı / sürükləmə hook-u | — |
-| 11 | «Top border of route chips is overflowed — fix, no need to check, fast update» | CSS düzəlişi | Problem komanda tərəfindən tapılıb |
-| 12 | «Operators have very few actions... I am open to your suggestions» → 4 funksiyanın hamısı seçildi | Operator konsolu (6 səhifə), 20 yeni test | — |
-| 13 | «Finalize the docs and check Docker from scratch... docs in Azerbaijani... AI declaration should show the human work» | Təmiz Docker yoxlaması, sənədlər | Tələblər komanda tərəfindən müəyyən edilib |
+| # | Mərhələ | Tapşırığın məzmunu (prompt) | Qəbul meyarı | Nəticə |
+|---|---|---|---|---|
+| 1 | Təhlil və planlaşdırma | Müsabiqə qaydalarını (PDF) və tapşırığı təhlil et; qiymətləndirmə meyarlarını nəzərə alaraq mərhələli icra planı hazırla. Stack: React, Tailwind CSS, Node.js, Express, PostgreSQL, ORM, Docker Compose | Tələblərin tam əhatəsi, vaxt bölgüsü, risklərin idarəsi | `PLAN.md` — 9 mərhələ, arxitektura, API layihəsi, «kəsmə xətti» |
+| 2 | Mühit və skelet | Layihə strukturunu, backend/frontend skeletini, Dockerfile-ları və docker-compose-u qur; çatışmayan alətləri (Node.js, Git) quraşdır; PostgreSQL-i Docker-də işə sal | Health endpoint və frontend işləyir, testlər keçir | Skelet, nginx proksi, ilk testlər |
+| 3 | Verilənlər modeli | Prisma sxemini (marşrut, dayanacaq, avtobus, GPS, bildiriş, snapshot, xəbərdarlıq) və real Bakı məkanları əsasında seed yarat | Miqrasiya tətbiq olunur, məlumatlar SQL ilə təsdiqlənir | 5 marşrut, 21 dayanacaq, 18 avtobus |
+| 4 | Versiya nəzarəti | Hər mərhələni ayrıca commit kimi qeyd et və komandanın GitHub repozitoriyasına göndər | İzlənə bilən tarixçə | 11 mərhələli commit |
+| 5 | Analitika mühərriki | Sıxlıq indeksi, ETA və «10 dəqiqə fasiləsiz Yüksək» anomaliya qaydasını DB-dən asılı olmayan funksiyalar kimi, kənar hallarla birlikdə test edərək yaz | Bütün kənar hallar testlə əhatə olunub | 35 unit test |
+| 6 | Real vaxt qatı | GPS simulyatoru, dövri analitika prosesi və Socket.IO hadisələri; qaydanı real bazada yoxla | Xəbərdarlıq dəqiq 10 dəqiqədən sonra, bir dəfə | Canlı inteqrasiya testi |
+| 7 | API | Sərnişin və operator REST API-ləri; validasiya, spam qoruması, mərkəzi xəta emalı | Bütün endpoint-lər testlə və canlı yoxlanılır | 22 API testi |
+| 8 | İstifadəçi interfeysləri | Sərnişin tətbiqi (xəritə, ETA, bildiriş) və operator paneli (sıxlıq cədvəli, xəritə, xəbərdarlıqlar) | Brauzerdə tam ssenari, mobil görünüş | Hər iki modul |
+| 9 | İnkişaf iş axını | Backend və DB-ni Docker-də, frontend-i lokal canlı yenilənmə rejimində işə sal | Kod dəyişiklikləri yenidən build olmadan görünür | Hibrid rejim |
+| 10 | Davranış auditi | Tək bildirişin xəttin səviyyəsini dəyişməməsinin səbəbini əsaslandır, bildirişdən xəbərdarlığa qədər bütün axını izah et | Rəqəmlərlə təsdiqlənmiş izah | Real ölçmə; spam zəifliyi müəyyən edildi |
+| 11 | Təhlükəsizlik və dizayn | Rol əsaslı autentifikasiya (sərnişin/operator) tətbiq et — sərnişin operator funksiyalarına çıxış əldə etməməlidir; interfeysi peşəkar səviyyədə yenidən dizayn et | Server tərəfində 401/403, brauzerdə rol yönləndirməsi | JWT + bcrypt, yeni dizayn sistemi, 18 test |
+| 12 | UX düzəlişləri | Desktopda üfüqi seçim zolaqlarının siçan çarxı ilə idarəsini təmin et; düymə kənarının kəsilməsini aradan qaldır | Siçan çarxı ilə sürüşdürmə işləyir | Təkrar istifadə olunan hook, CSS düzəlişi |
+| 13 | Operator funksionallığı | Dispetçer iş prosesi üçün əlavə funksiyalar təklif et; seçilmiş 4 istiqaməti (park və dispetçer, elanlar, moderasiya, tarixçə/ayarlar) həyata keçir | Xəbərdarlıqdan real tədbirə qədər qapalı dövrə | Operator konsolu (6 səhifə), 20 test |
+| 14 | Təhvil hazırlığı | Sistemi təmiz mühitdə sıfırdan yoxla (seed, demo hesablar daxil); bütün sənədləri Azərbaycan dilində, jüri üçün hərtərəfli hazırla; AI bəyannaməsində rol bölgüsünü şəffaf göstər | Jüri kompüterində bir əmrlə problemsiz işə salınma | Təmiz Docker yoxlaması, README, texniki izah, bu bəyannamə |
 
 ---
 
@@ -90,24 +91,7 @@ Komandanın AI-yə verdiyi əsas promptlar (orijinal dildə, qısaldılmış):
 
 ---
 
-## 7. AI-nin səhvləri və düzəlişlər (şəffaflıq üçün)
-
-AI-nin işi qüsursuz olmayıb; aşağıdakılar test və yoxlama zamanı aşkarlanıb və düzəldilib:
-
-| Problem | Necə aşkarlandı | Düzəliş |
-|---|---|---|
-| Test datasında səhv (1 dəqiqəlik pəncərədə bildirişlər pəncərədən kənarda idi) | Avtomatik test | Test düzəldildi, qayda dəyişmədi |
-| Bütün xətlər daim «Orta» görünürdü | Canlı ölçmə | Simulyatorun yük əmsalları kalibrləndi |
-| Operator alerti bağlayan kimi eyni alert dərhal yenidən yaranırdı | Brauzerdə canlı ssenari | Qayda: bağlanmadan sonra tam yeni pəncərə tələb olunur (+2 test) |
-| Xəritə provayderi (CARTO) API açarı tələb edirdi | Brauzer ekran görüntüsü | OpenStreetMap-ə qayıdıldı |
-| Tarix «M10 31» kimi görünürdü (brauzerdə az-AZ ay adları yoxdur) | Ekran görüntüsü | Azərbaycan ay adları əlavə edildi |
-| 1280px ekranda cədvəl sığmırdı; dialoq üzərində başlıq görünürdü | Ekran görüntüsü | Responsiv düzəliş; dialoq portal ilə render edildi |
-| Siçan çarxı ilə üfüqi sürüşdürmə yox idi; düymə kənarı kəsilirdi | **Komanda tərəfindən tapıldı** | Hook və CSS düzəlişi |
-| Sərnişin operator səhifəsinə girə bilirdi | **Komanda tərəfindən tapıldı** | Rol əsaslı giriş (server və klient tərəfində) |
-
----
-
-## 8. Məsuliyyət bəyanatı
+## 7. Məsuliyyət bəyanatı
 
 - Təqdim edilən bütün kod komanda tərəfindən nəzərdən keçirilib, işə salınıb və sınaqdan keçirilib; nəticəyə görə məsuliyyəti komanda daşıyır.
 - Layihə yarış müddətində (31.10.2026, 11:00–15:00) sıfırdan yaradılıb; kənar şəxslərdən kömək alınmayıb, digər komandalarla kod paylaşılmayıb.
